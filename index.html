@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stock Lending — 3% APR Offers</title>
+  <meta name="description" content="Professional stock lending desk at 3% APR. Cards + table + calculator. Shows monthly & yearly interest totals only (no notional)." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html{scroll-behavior:smooth}
+    body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial}
+    .glass{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.03))}
+    .ring-grad{box-shadow:0 0 0 1px rgba(255,255,255,.08) inset}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+    .sticky-th th{position:sticky;top:0;background-color:rgb(2 6 23/.85);backdrop-filter:saturate(160%) blur(4px)}
+    .logo{height:28px;width:28px;border-radius:9999px;object-fit:cover;box-shadow:0 0 0 1px rgba(255,255,255,.12)}
+    .placeholder{height:28px;width:28px;border-radius:9999px;display:grid;place-items:center;background:rgba(148,163,184,.15);color:#cbd5e1;font-size:11px;font-weight:700}
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100">
+  <!-- Header -->
+  <header class="sticky top-0 z-40 border-b border-white/10 bg-slate-950/75 backdrop-blur">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <a href="#" class="flex items-center gap-3">
+        <div class="h-9 w-9 rounded-xl bg-cyan-500/15 ring-1 ring-cyan-400/30 grid place-items-center text-cyan-300 font-black">PV</div>
+        <div class="leading-tight">
+          <div class="text-xs text-slate-300">Lending Desk</div>
+          <div class="text-sm font-semibold">Stock Lending — 3% APR</div>
+        </div>
+      </a>
+      <nav class="hidden md:flex items-center gap-6 text-sm text-slate-300">
+        <a class="hover:text-white" href="#offers">Offers</a>
+        <a class="hover:text-white" href="#calc">Calculator</a>
+        <a class="rounded-xl bg-cyan-400/20 text-cyan-200 px-4 py-2 hover:bg-cyan-400/30" href="#contact">Inquire</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="relative overflow-hidden">
+    <div class="absolute inset-0 bg-[radial-gradient(70%_50%_at_10%_0%,rgba(56,189,248,0.16),transparent),radial-gradient(60%_60%_at_90%_10%,rgba(14,165,233,0.10),transparent)]"></div>
+    <div class="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-12">
+      <div class="max-w-3xl">
+        <h1 class="text-4xl sm:text-5xl font-extrabold leading-tight tracking-tight">Stock Lending</h1>
+        <p class="mt-4 text-slate-300">Fixed <span class="font-semibold">3% APR</span>. We show the <strong>monthly</strong> and <strong>yearly interest cost</strong> for each position (based on Price × Shares). No notional totals shown.</p>
+        <div class="mt-3 text-xs text-slate-400">Estimates only — not financial advice or an offer of securities. Subject to availability, KYC/AML, and approval.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Offers (cards + table) -->
+  <section id="offers" class="border-t border-white/10">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10 space-y-6">
+      <div id="cardGrid" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"></div>
+      <noscript>
+        <div class="mt-4 rounded-xl bg-yellow-500/10 text-yellow-200 p-4 ring-1 ring-yellow-400/20">
+          Enable JavaScript to see offers. Quick list (3% APR): Altria (MO), DIA, OMF, UHT, HRZN.
+        </div>
+      </noscript>
+
+      <!-- Table -->
+      <div class="glass rounded-2xl ring-grad p-4">
+        <div class="flex flex-wrap items-center gap-3 mb-3">
+          <input id="q" type="search" placeholder="Search by name or ticker…" class="w-full sm:w-72 rounded-xl bg-white/5 border border-white/10 px-4 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/40" />
+          <select id="sort" class="rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm">
+            <option value="name_asc">Name (A→Z)</option>
+            <option value="name_desc">Name (Z→A)</option>
+            <option value="year_desc">Yearly Interest (high→low)</option>
+            <option value="year_asc">Yearly Interest (low→high)</option>
+          </select>
+          <div class="ml-auto text-sm text-slate-400">APR: <span id="aprLabel">3%</span> · Positions: <span id="count">0</span></div>
+        </div>
+        <div class="overflow-auto rounded-xl ring-1 ring-white/10">
+          <table class="min-w-full text-sm">
+            <thead class="sticky-th text-left text-slate-200">
+              <tr>
+                <th class="px-4 py-3">Stock</th>
+                <th class="px-4 py-3">Ticker</th>
+                <th class="px-4 py-3 text-right">Price</th>
+                <th class="px-4 py-3 text-right">Shares</th>
+                <th class="px-4 py-3 text-right">Monthly Interest</th>
+                <th class="px-4 py-3 text-right">Yearly Interest</th>
+              </tr>
+            </thead>
+            <tbody id="rows" class="divide-y divide-white/5"></tbody>
+          </table>
+        </div>
+        <div id="errbar" class="hidden mt-3 rounded-xl bg-rose-500/10 text-rose-200 p-3 ring-1 ring-rose-400/20 text-sm"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Calculator -->
+  <section id="calc" class="border-t border-white/10">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10">
+      <div class="glass rounded-2xl ring-grad p-6 grid md:grid-cols-2 gap-6 items-start">
+        <div>
+          <h3 class="text-2xl font-bold mb-2">Interest Estimator</h3>
+          <p class="text-slate-300 mb-4">Pick a stock, adjust shares/price if needed, and calculate interest at the fixed <strong>3% APR</strong>.</p>
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <label class="block text-sm col-span-2">Stock
+              <select id="sel" class="mt-1 w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm"></select>
+            </label>
+            <label class="block text-sm">Price ($)
+              <input id="cPrice" type="number" step="any" class="mt-1 w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2" />
+            </label>
+            <label class="block text-sm">Shares
+              <input id="cShares" type="number" step="any" class="mt-1 w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2" />
+            </label>
+            <label class="block text-sm">APR (%)
+              <input id="cApr" type="number" step="any" value="3" class="mt-1 w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2" />
+            </label>
+            <label class="block text-sm">Term (months)
+              <input id="cMonths" type="number" step="1" value="12" class="mt-1 w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2" />
+            </label>
+            <div class="col-span-2 flex gap-3 mt-1">
+              <button id="calcBtn" class="rounded-xl bg-cyan-500/20 text-cyan-200 px-4 py-2 hover:bg-cyan-500/30" type="button">Calculate</button>
+              <button id="resetBtn" class="rounded-xl border border-white/15 px-4 py-2 hover:bg-white/5" type="button">Reset</button>
+            </div>
+          </div>
+          <div class="mt-2 text-sm space-y-1">
+            <div>Monthly Interest (Position): <span id="cMi" class="font-semibold"></span></div>
+            <div>Yearly Interest (Position): <span id="cYi" class="font-semibold"></span></div>
+            <div>Total Interest (Term): <span id="cTot" class="font-semibold"></span></div>
+          </div>
+        </div>
+        <div>
+          <h4 class="font-semibold mb-2">Details</h4>
+          <ul class="text-slate-300 text-sm space-y-2 list-disc list-inside">
+            <li>Interest is computed at <span class="mono">APR × Price × Shares</span>.</li>
+            <li>Monthly interest = (APR ÷ 12) × Price × Shares.</li>
+            <li>Change APR or term to explore scenarios. Defaults to 3% APR, 12 months.</li>
+          </ul>
+          <p class="text-xs text-slate-500 mt-3">Numbers are estimates for discussion only. Final terms depend on availability and risk.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section id="contact" class="border-t border-white/10">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10">
+      <div class="glass rounded-2xl ring-grad p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+        <div>
+          <h3 class="text-2xl font-bold">Request a quote</h3>
+          <p class="text-slate-300">Email <a class="text-cyan-300 hover:underline" href="mailto:paytontvirgil@gmail.com?subject=Stock%20Lending%20Inquiry%20(3%%20APR)">paytontvirgil@gmail.com</a> with the tickers and terms you want.</p>
+        </div>
+        <a href="#offers" class="rounded-xl border border-white/15 px-5 py-3 hover:bg-white/5">Back to Offers</a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="border-t border-white/10 py-8">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+      <p class="text-sm text-slate-400">© <span id="year"></span> Payton Virgil · 3% APR · Estimates only.</p>
+      <p class="text-xs text-slate-500">This is not investment advice or an offer to sell securities.</p>
+    </div>
+  </footer>
+
+  <script>
+    // ====== CONSTANTS & HELPERS ======
+    const APR_DEFAULT = 0.03; // 3%
+    const fmtUSD = new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'});
+    const fmtNum = new Intl.NumberFormat('en-US');
+
+    // Data
+    const DATA = [
+      { name:'Altria', ticker:'MO', price:60.10, shares:1.31 },
+      { name:'SPDR Dow Jones Industrial Average ETF', ticker:'DIA', price:430.89, shares:0.180647 },
+      { name:'OneMain', ticker:'OMF', price:55.19, shares:1.07 },
+      { name:'Universal Health Realty Income Trust', ticker:'UHT', price:40.78, shares:0.48543 },
+      { name:'Horizon Technology Finance', ticker:'HRZN', price:7.33, shares:2.65 },
+    ];
+
+    // Optional logo files (place in /assets/logos/*.png)
+    const LOGOS = { MO:'/assets/logos/mo.png', DIA:'/assets/logos/dia.png', OMF:'/assets/logos/omf.png', UHT:'/assets/logos/uht.png', HRZN:'/assets/logos/hrzn.png' };
+
+    function logoTag(ticker,name){
+      const srcs = [];
+      if(LOGOS[ticker]) srcs.push(LOGOS[ticker]);
+      const base = `/assets/logos/${ticker.toLowerCase()}`;
+      srcs.push(`${base}.png`, `${base}.jpg`, `${base}.jpeg`, `${base}.webp`, `${base}.svg`);
+      const initials = (ticker||name||'?').replace(/[^A-Za-z0-9]/g,'').slice(0,3).toUpperCase();
+      const first = srcs.shift();
+      const rest = srcs.join('|');
+      return `<img src="${first}" data-alts="${rest}" data-initials="${initials}" alt="${ticker} logo" class="logo" onerror="imgFallback(this)">`;
+    }
+    function imgFallback(img){
+      try{
+        const list = (img.getAttribute('data-alts')||'').split('|').filter(Boolean);
+        if(list.length){
+          const next = list.shift();
+          img.setAttribute('data-alts', list.join('|'));
+          img.src = next; return;
+        }
+        const init = img.getAttribute('data-initials')||'?';
+        const ph = document.createElement('div'); ph.className='placeholder'; ph.textContent=init; img.replaceWith(ph);
+      }catch(e){ console.error(e); }
+    }
+
+    // Calculations
+    const monthlyTotal = (price, shares, apr)=> price * shares * (apr/12);
+    const yearlyTotal  = (price, shares, apr)=> price * shares * apr;
+
+    // ====== RENDERING ======
+    function renderCards(){
+      const grid = document.getElementById('cardGrid');
+      if(!grid) throw new Error('#cardGrid not found');
+      grid.innerHTML = DATA.map(x=>{
+        const mTot = monthlyTotal(x.price, x.shares, APR_DEFAULT);
+        const yTot = yearlyTotal(x.price, x.shares, APR_DEFAULT);
+        return `<div class="glass rounded-2xl ring-grad p-5 flex flex-col gap-3">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3">${logoTag(x.ticker,x.name)}
+              <div>
+                <div class="text-xs uppercase tracking-wide text-slate-400">Stock</div>
+                <h2 class="text-lg font-semibold">${x.name} <span class="text-slate-400 mono">(${x.ticker})</span></h2>
+              </div>
+            </div>
+            <span class="rounded-full bg-emerald-400/15 text-emerald-300 text-xs px-2.5 py-1 ring-1 ring-emerald-400/25">Available</span>
+          </div>
+          <dl class="grid grid-cols-2 gap-2 text-sm">
+            <div><dt class="text-slate-400">Price</dt><dd class="font-medium">${fmtUSD.format(x.price)}</dd></div>
+            <div><dt class="text-slate-400">Shares</dt><dd class="font-medium">${fmtNum.format(x.shares)}</dd></div>
+            <div><dt class="text-slate-400">Monthly Interest</dt><dd class="font-medium">${fmtUSD.format(mTot)}</dd></div>
+            <div><dt class="text-slate-400">Yearly Interest</dt><dd class="font-medium">${fmtUSD.format(yTot)}</dd></div>
+          </dl>
+        </div>`;
+      }).join('');
+    }
+
+    function rowHTML(x){
+      const mTot = monthlyTotal(x.price, x.shares, APR_DEFAULT);
+      const yTot = yearlyTotal(x.price, x.shares, APR_DEFAULT);
+      return `<tr class="hover:bg-white/5">
+        <td class="px-4 py-3 font-medium"><div class="flex items-center gap-3">${logoTag(x.ticker,x.name)}<span>${x.name}</span></div></td>
+        <td class="px-4 py-3 mono">${x.ticker}</td>
+        <td class="px-4 py-3 text-right">${fmtUSD.format(x.price)}</td>
+        <td class="px-4 py-3 text-right">${fmtNum.format(x.shares)}</td>
+        <td class="px-4 py-3 text-right">${fmtUSD.format(mTot)}</td>
+        <td class="px-4 py-3 text-right">${fmtUSD.format(yTot)}</td>
+      </tr>`;
+    }
+
+    function renderTable(){
+      const qEl = document.getElementById('q');
+      const sortEl = document.getElementById('sort');
+      const rowsEl = document.getElementById('rows');
+      if(!qEl||!sortEl||!rowsEl) throw new Error('table controls missing');
+      const q = qEl.value.trim().toLowerCase();
+      const sort = sortEl.value;
+      let rows = DATA.filter(x => `${x.name} ${x.ticker}`.toLowerCase().includes(q));
+      rows.sort((a,b)=>{
+        const ay = yearlyTotal(a.price,a.shares,APR_DEFAULT), by = yearlyTotal(b.price,b.shares,APR_DEFAULT);
+        switch(sort){
+          case 'name_desc': return b.name.localeCompare(a.name);
+          case 'year_desc': return by - ay;
+          case 'year_asc': return ay - by;
+          case 'name_asc':
+          default: return a.name.localeCompare(b.name);
+        }
+      });
+      rowsEl.innerHTML = rows.map(rowHTML).join('');
+      document.getElementById('count').textContent = rows.length;
+      document.getElementById('aprLabel').textContent = '3%';
+    }
+
+    // ====== CALCULATOR ======
+    function buildSelect(){
+      const sel = document.getElementById('sel');
+      if(!sel) throw new Error('#sel not found');
+      sel.innerHTML = DATA.map(x=>`<option value="${x.ticker}">${x.name} (${x.ticker})</option>`).join('');
+      sel.onchange = ()=>{
+        const v = sel.value; const x = DATA.find(r=>r.ticker===v); if(!x) return;
+        document.getElementById('cPrice').value = x.price;
+        document.getElementById('cShares').value = x.shares;
+      };
+      if(DATA[0]){ sel.value = DATA[0].ticker; sel.onchange(); }
+    }
+
+    function calc(){
+      const price = parseFloat(document.getElementById('cPrice').value||'0');
+      const shares = parseFloat(document.getElementById('cShares').value||'0');
+      const aprPct = parseFloat(document.getElementById('cApr').value||'3');
+      const months = parseInt(document.getElementById('cMonths').value||'12',10);
+      const apr = (isFinite(aprPct)?aprPct:3)/100;
+      const mTot = price * shares * (apr/12);
+      const yTot = price * shares * apr;
+      const tot = mTot * months;
+      document.getElementById('cMi').textContent = fmtUSD.format(mTot);
+      document.getElementById('cYi').textContent = fmtUSD.format(yTot);
+      document.getElementById('cTot').textContent = fmtUSD.format(tot);
+    }
+
+    // ====== INIT ======
+    function init(){
+      try{
+        renderCards();
+        renderTable();
+        buildSelect();
+        calc();
+        document.getElementById('q').addEventListener('input', renderTable);
+        document.getElementById('sort').addEventListener('change', renderTable);
+        document.getElementById('calcBtn').addEventListener('click', calc);
+        document.getElementById('resetBtn').addEventListener('click', ()=>{ buildSelect(); document.getElementById('cApr').value=3; document.getElementById('cMonths').value=12; calc(); });
+      }catch(e){
+        const bar=document.getElementById('errbar'); if(bar){ bar.textContent = 'Error rendering: '+(e&&e.message?e.message:e); bar.classList.remove('hidden'); }
+        console.error(e);
+      }
+      const y=document.getElementById('year'); if(y){ y.textContent=new Date().getFullYear(); }
+    }
+
+    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
+  </script>
+</body>
+</html>
