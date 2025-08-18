@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Stock Lending — 3% APR Offers</title>
-  <meta name="description" content="Professional stock lending desk at 3% APR. Cards + table + calculator. Shows monthly & yearly interest totals only (no notional)." />
+  <meta name="description" content="Professional stock lending desk at 3% APR. Cards or List view, interest-only calculator, and inquiry form. Shows broker, shares available, and interest cost per month & year." />
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     html{scroll-behavior:smooth}
@@ -15,9 +15,202 @@
     .sticky-th th{position:sticky;top:0;background-color:rgb(2 6 23/.85);backdrop-filter:saturate(160%) blur(4px)}
     .logo{height:28px;width:28px;border-radius:9999px;object-fit:cover;box-shadow:0 0 0 1px rgba(255,255,255,.12)}
     .placeholder{height:28px;width:28px;border-radius:9999px;display:grid;place-items:center;background:rgba(148,163,184,.15);color:#cbd5e1;font-size:11px;font-weight:700}
+    .btn-tab{border-radius:0.75rem;padding:0.4rem 0.75rem;border:1px solid rgba(255,255,255,.12)}
+    .btn-active{background:rgba(34,211,238,.18);color:rgb(165,243,252);border-color:rgba(34,211,238,.35)}
   </style>
+  <script defer>
+    // ====== CONSTANTS & HELPERS ======
+    const APR_DEFAULT = 0.03; // 3%
+    const fmtUSD = new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'});
+    const fmtNum = new Intl.NumberFormat('en-US');
+
+    // Internal data (price is used only internally to compute interest; never shown)
+    const DATA = [
+      { name:'Altria', ticker:'MO',   price:60.10,  shares:1.31,     broker:'Robinhood' },
+      { name:'SPDR Dow Jones Industrial Average ETF', ticker:'DIA', price:430.89, shares:0.180647, broker:'Robinhood' },
+      { name:'OneMain', ticker:'OMF', price:55.19,  shares:1.07,     broker:'Robinhood' },
+      { name:'Universal Health Realty Income Trust', ticker:'UHT', price:40.78, shares:0.48543, broker:'Robinhood' },
+      { name:'Horizon Technology Finance', ticker:'HRZN', price:7.33, shares:2.65, broker:'Robinhood' },
+    ];
+
+    // Logo files (place these in /assets/logos/ with these exact names)
+    const LOGOS = {
+      DIA: '/assets/logos/Screenshot-2025-07-11-2.33.48-PM.png',
+      MO:  '/assets/logos/651ee43a9416d.png',
+      HRZN:'/assets/logos/1631311926898.jpeg',
+      OMF: '/assets/logos/unnamed.png',
+      UHT: '/assets/logos/uht.webp'
+    };
+
+    function logoTag(ticker,name){
+      if(LOGOS[ticker]){
+        return `<img src="${LOGOS[ticker]}" alt="${ticker} logo" class="logo">`;
+      }
+      const initials = (ticker||name||'?').replace(/[^A-Za-z0-9]/g,'').slice(0,3).toUpperCase();
+      return `<div class="placeholder" aria-label="${ticker} logo">${initials}</div>`;
+    }
+
+    // Calculations (price used only internally)
+    const monthlyTotal = (price, shares, apr)=> price * shares * (apr/12);
+    const yearlyTotal  = (price, shares, apr)=> price * shares * apr;
+
+    // ====== RENDERING ======
+    function cardHTML(x){
+      const mTot = monthlyTotal(x.price, x.shares, APR_DEFAULT);
+      const yTot = yearlyTotal(x.price, x.shares, APR_DEFAULT);
+      return `<div class="glass rounded-2xl ring-grad p-5 flex flex-col gap-3">
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex items-center gap-3">${logoTag(x.ticker,x.name)}
+            <div>
+              <div class="text-xs uppercase tracking-wide text-slate-400">Stock</div>
+              <h2 class="text-lg font-semibold">${x.name} <span class="text-slate-400 mono">(${x.ticker})</span></h2>
+            </div>
+          </div>
+          <span class="rounded-full bg-emerald-400/15 text-emerald-300 text-xs px-2.5 py-1 ring-1 ring-emerald-400/25">Available</span>
+        </div>
+        <dl class="grid grid-cols-2 gap-2 text-sm">
+          <div><dt class="text-slate-400">Broker</dt><dd class="font-medium">${x.broker}</dd></div>
+          <div><dt class="text-slate-400">Shares</dt><dd class="font-medium">${fmtNum.format(x.shares)}</dd></div>
+          <div><dt class="text-slate-400">Monthly Interest</dt><dd class="font-medium">${fmtUSD.format(mTot)}</dd></div>
+          <div><dt class="text-slate-400">Yearly Interest</dt><dd class="font-medium">${fmtUSD.format(yTot)}</dd></div>
+        </dl>
+      </div>`;
+    }
+
+    function renderCards(){
+      const grid = document.getElementById('cardGrid');
+      if(!grid) return;
+      const html = DATA.map(cardHTML).join('');
+      grid.innerHTML = html || '<div class="rounded-xl bg-yellow-500/10 text-yellow-200 p-4 ring-1 ring-yellow-400/20">No offers to display.</div>';
+    }
+
+    function rowHTML(x){
+      const mTot = monthlyTotal(x.price, x.shares, APR_DEFAULT);
+      const yTot = yearlyTotal(x.price, x.shares, APR_DEFAULT);
+      return `<tr class="hover:bg-white/5">
+        <td class="px-4 py-3 font-medium">
+          <div class="flex items-center gap-3">${logoTag(x.ticker,x.name)}<span>${x.name}</span></div>
+        </td>
+        <td class="px-4 py-3 mono">${x.ticker}</td>
+        <td class="px-4 py-3">${x.broker}</td>
+        <td class="px-4 py-3 text-right">${fmtNum.format(x.shares)}</td>
+        <td class="px-4 py-3 text-right">${fmtUSD.format(mTot)}</td>
+        <td class="px-4 py-3 text-right">${fmtUSD.format(yTot)}</td>
+      </tr>`;
+    }
+
+    function renderTable(){
+      const qEl = document.getElementById('q');
+      const sortEl = document.getElementById('sort');
+      const rowsEl = document.getElementById('rows');
+      if(!qEl || !sortEl || !rowsEl) return;
+
+      const q = (qEl.value||'').trim().toLowerCase();
+      const sort = sortEl.value;
+
+      let rows = DATA.filter(x => `${x.name} ${x.ticker}`.toLowerCase().includes(q));
+
+      rows.sort((a,b)=>{
+        const ay = yearlyTotal(a.price,a.shares,APR_DEFAULT), by = yearlyTotal(b.price,b.shares,APR_DEFAULT);
+        switch(sort){
+          case 'name_desc': return b.name.localeCompare(a.name);
+          case 'year_desc': return by - ay;
+          case 'year_asc': return ay - by;
+          case 'name_asc':
+          default: return a.name.localeCompare(b.name);
+        }
+      });
+
+      rowsEl.innerHTML = rows.map(rowHTML).join('') || `<tr><td class="px-4 py-3 text-slate-300" colspan="6">No matches.</td></tr>`;
+      const count = document.getElementById('count');
+      if(count) count.textContent = rows.length;
+      const aprLabel = document.getElementById('aprLabel');
+      if(aprLabel) aprLabel.textContent = '3%';
+    }
+
+    // ====== CALCULATOR (interest-only) ======
+    function buildSelect(){
+      const sel = document.getElementById('sel');
+      if(!sel) return;
+      sel.innerHTML = DATA.map(x=>`<option value="${x.ticker}">${x.name} (${x.ticker})</option>`).join('');
+      sel.onchange = calc;
+      if(DATA[0]) sel.value = DATA[0].ticker;
+    }
+
+    function calc(){
+      const sel = document.getElementById('sel');
+      if(!sel) return;
+      const v = sel.value;
+      const x = DATA.find(r=>r.ticker===v) || DATA[0];
+      const aprPct = parseFloat(document.getElementById('cApr')?.value||'3');
+      const months = parseInt(document.getElementById('cMonths')?.value||'12',10);
+      const apr = (isFinite(aprPct)?aprPct:3)/100;
+      const mTot = monthlyTotal(x.price, x.shares, apr);
+      const yTot = yearlyTotal(x.price, x.shares, apr);
+      const tot = mTot * months;
+      const set = (id,val)=>{ const el=document.getElementById(id); if(el) el.textContent = val; };
+      set('cMi', fmtUSD.format(mTot));
+      set('cYi', fmtUSD.format(yTot));
+      set('cTot', fmtUSD.format(tot));
+    }
+
+    // ====== INIT & VIEW TOGGLE ======
+    function setView(view){
+      const cardGrid = document.getElementById('cardGrid');
+      const tableWrap = document.getElementById('tableWrap');
+      const btnCards = document.getElementById('btnCards');
+      const btnList  = document.getElementById('btnList');
+      if(!cardGrid || !tableWrap || !btnCards || !btnList) return;
+      const isCards = view === 'cards';
+      cardGrid.classList.toggle('hidden', !isCards);
+      tableWrap.classList.toggle('hidden', isCards);
+      btnCards.classList.toggle('btn-active', isCards);
+      btnList.classList.toggle('btn-active', !isCards);
+      if(!isCards) renderTable();
+    }
+
+    function init(){
+      // Global error banner hook
+      window.addEventListener('error', (e)=>{
+        const bar=document.getElementById('errbar-global');
+        if(bar){ bar.textContent = 'Error: ' + (e?.message||e); bar.classList.remove('hidden'); }
+      });
+
+      renderCards();
+      renderTable();
+      buildSelect();
+      calc();
+
+      // Toggle handlers
+      document.getElementById('btnCards')?.addEventListener('click', ()=> setView('cards'));
+      document.getElementById('btnList')?.addEventListener('click',  ()=> setView('list'));
+      setView('cards'); // default
+
+      // Table controls
+      document.getElementById('q')?.addEventListener('input', renderTable);
+      document.getElementById('sort')?.addEventListener('change', renderTable);
+
+      // Calculator controls
+      document.getElementById('calcBtn')?.addEventListener('click', calc);
+      document.getElementById('resetBtn')?.addEventListener('click', ()=>{
+        const apr=document.getElementById('cApr'); if(apr) apr.value=3;
+        const mon=document.getElementById('cMonths'); if(mon) mon.value=12;
+        if(DATA[0]){ const sel=document.getElementById('sel'); if(sel) sel.value = DATA[0].ticker; }
+        calc();
+      });
+
+      const y=document.getElementById('year'); if(y) y.textContent=new Date().getFullYear();
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
 </head>
 <body class="bg-slate-950 text-slate-100">
+  <!-- Global error banner (shows if any JS error occurs) -->
+  <div id="errbar-global" class="hidden mx-auto max-w-6xl mt-4 px-4">
+    <div class="rounded-xl bg-rose-500/10 text-rose-200 p-3 ring-1 ring-rose-400/20 text-sm"></div>
+  </div>
+
   <!-- Header -->
   <header class="sticky top-0 z-40 border-b border-white/10 bg-slate-950/75 backdrop-blur">
     <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -42,24 +235,34 @@
     <div class="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-12">
       <div class="max-w-3xl">
         <h1 class="text-4xl sm:text-5xl font-extrabold leading-tight tracking-tight">Stock Lending</h1>
-        <p class="mt-4 text-slate-300">Fixed <span class="font-semibold">3% APR</span>. We show the <strong>monthly</strong> and <strong>yearly interest cost</strong> for each position (based on Price × Shares). No notional totals shown.</p>
+        <p class="mt-4 text-slate-300">
+          Fixed <span class="font-semibold">3% APR</span>. We show the <strong>broker</strong>, <strong>shares available</strong>, and the
+          <strong>interest cost</strong> per <strong>month</strong> & <strong>year</strong> for each position.
+          <em>No share prices are displayed.</em>
+        </p>
         <div class="mt-3 text-xs text-slate-400">Estimates only — not financial advice or an offer of securities. Subject to availability, KYC/AML, and approval.</div>
       </div>
     </div>
   </section>
 
-  <!-- Offers (cards + table) -->
+  <!-- Offers (Cards/List toggle) -->
   <section id="offers" class="border-t border-white/10">
     <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10 space-y-6">
-      <div id="cardGrid" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"></div>
-      <noscript>
-        <div class="mt-4 rounded-xl bg-yellow-500/10 text-yellow-200 p-4 ring-1 ring-yellow-400/20">
-          Enable JavaScript to see offers. Quick list (3% APR): Altria (MO), DIA, OMF, UHT, HRZN.
+      <!-- Toggle bar -->
+      <div class="glass rounded-2xl ring-grad p-4 flex flex-wrap items-center gap-3">
+        <div class="text-sm text-slate-300">Interest shown is the <span class="font-semibold">cost to borrow</span> at 3% APR.</div>
+        <div class="ml-auto flex items-center gap-2">
+          <span class="text-sm text-slate-400 mr-1">View:</span>
+          <button id="btnCards" class="btn-tab btn-active" type="button">Cards</button>
+          <button id="btnList" class="btn-tab" type="button">List</button>
         </div>
-      </noscript>
+      </div>
 
-      <!-- Table -->
-      <div class="glass rounded-2xl ring-grad p-4">
+      <!-- Cards view -->
+      <div id="cardGrid" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"></div>
+
+      <!-- List view -->
+      <div id="tableWrap" class="glass rounded-2xl ring-grad p-4 hidden">
         <div class="flex flex-wrap items-center gap-3 mb-3">
           <input id="q" type="search" placeholder="Search by name or ticker…" class="w-full sm:w-72 rounded-xl bg-white/5 border border-white/10 px-4 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/40" />
           <select id="sort" class="rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm">
@@ -76,7 +279,7 @@
               <tr>
                 <th class="px-4 py-3">Stock</th>
                 <th class="px-4 py-3">Ticker</th>
-                <th class="px-4 py-3 text-right">Price</th>
+                <th class="px-4 py-3">Broker</th>
                 <th class="px-4 py-3 text-right">Shares</th>
                 <th class="px-4 py-3 text-right">Monthly Interest</th>
                 <th class="px-4 py-3 text-right">Yearly Interest</th>
@@ -90,22 +293,19 @@
     </div>
   </section>
 
-  <!-- Calculator -->
+  <!-- Calculator (interest-only UI) -->
   <section id="calc" class="border-t border-white/10">
     <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10">
       <div class="glass rounded-2xl ring-grad p-6 grid md:grid-cols-2 gap-6 items-start">
         <div>
-          <h3 class="text-2xl font-bold mb-2">Interest Estimator</h3>
-          <p class="text-slate-300 mb-4">Pick a stock, adjust shares/price if needed, and calculate interest at the fixed <strong>3% APR</strong>.</p>
+          <h3 class="text-2xl font-bold mb-2">Interest-Only Estimator</h3>
+          <p class="text-slate-300 mb-4">
+            Select a stock, pick an APR and term. We calculate interest using internal position data (price × shares).
+            Price is not shown; results display interest only.
+          </p>
           <div class="grid grid-cols-2 gap-3 mb-3">
             <label class="block text-sm col-span-2">Stock
               <select id="sel" class="mt-1 w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm"></select>
-            </label>
-            <label class="block text-sm">Price ($)
-              <input id="cPrice" type="number" step="any" class="mt-1 w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2" />
-            </label>
-            <label class="block text-sm">Shares
-              <input id="cShares" type="number" step="any" class="mt-1 w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2" />
             </label>
             <label class="block text-sm">APR (%)
               <input id="cApr" type="number" step="any" value="3" class="mt-1 w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2" />
@@ -127,8 +327,8 @@
         <div>
           <h4 class="font-semibold mb-2">Details</h4>
           <ul class="text-slate-300 text-sm space-y-2 list-disc list-inside">
-            <li>Interest is computed at <span class="mono">APR × Price × Shares</span>.</li>
-            <li>Monthly interest = (APR ÷ 12) × Price × Shares.</li>
+            <li>Interest = <span class="mono">APR × (Internal Price × Shares)</span>.</li>
+            <li>Monthly interest = (APR ÷ 12) × (Internal Price × Shares).</li>
             <li>Change APR or term to explore scenarios. Defaults to 3% APR, 12 months.</li>
           </ul>
           <p class="text-xs text-slate-500 mt-3">Numbers are estimates for discussion only. Final terms depend on availability and risk.</p>
@@ -137,15 +337,35 @@
     </div>
   </section>
 
-  <!-- Contact -->
+  <!-- Contact / Inquiry (Netlify Forms) -->
   <section id="contact" class="border-t border-white/10">
     <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10">
-      <div class="glass rounded-2xl ring-grad p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-        <div>
-          <h3 class="text-2xl font-bold">Request a quote</h3>
-          <p class="text-slate-300">Email <a class="text-cyan-300 hover:underline" href="mailto:paytontvirgil@gmail.com?subject=Stock%20Lending%20Inquiry%20(3%%20APR)">paytontvirgil@gmail.com</a> with the tickers and terms you want.</p>
-        </div>
-        <a href="#offers" class="rounded-xl border border-white/15 px-5 py-3 hover:bg-white/5">Back to Offers</a>
+      <div class="glass rounded-2xl ring-grad p-6">
+        <h3 class="text-2xl font-bold mb-2">Send an Inquiry</h3>
+        <p class="text-slate-300 mb-4">Use this form and we’ll reply by email. Submissions are securely handled by Netlify.</p>
+
+        <!-- Admin note (hidden from users):
+             After you deploy on Netlify, enable email notifications to receive submissions at paytontvirgil@gmail.com:
+             Netlify → Forms → stock-lending-inquiry → Notifications → Email → paytontvirgil@gmail.com
+        -->
+        <form name="stock-lending-inquiry" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="thank-you.html" class="grid sm:grid-cols-2 gap-4">
+          <input type="hidden" name="form-name" value="stock-lending-inquiry" />
+          <p class="hidden"><label>Don’t fill this out: <input name="bot-field" /></label></p>
+
+          <label class="block text-sm sm:col-span-1">Your Name
+            <input name="name" required class="mt-1 w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2" />
+          </label>
+          <label class="block text-sm sm:col-span-1">Email
+            <input name="email" type="email" required class="mt-1 w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2" />
+          </label>
+          <label class="block text-sm sm:col-span-2">Message
+            <textarea name="message" rows="6" required class="mt-1 w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2" placeholder="Tickers requested, target term, and any notes..."></textarea>
+          </label>
+
+          <div class="sm:col-span-2">
+            <button class="rounded-xl bg-cyan-500/20 text-cyan-200 px-5 py-2 hover:bg-cyan-500/30" type="submit">Send Inquiry</button>
+          </div>
+        </form>
       </div>
     </div>
   </section>
@@ -156,161 +376,6 @@
       <p class="text-xs text-slate-500">This is not investment advice or an offer to sell securities.</p>
     </div>
   </footer>
-
-  <script>
-    // ====== CONSTANTS & HELPERS ======
-    const APR_DEFAULT = 0.03; // 3%
-    const fmtUSD = new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'});
-    const fmtNum = new Intl.NumberFormat('en-US');
-
-    // Data
-    const DATA = [
-      { name:'Altria', ticker:'MO', price:60.10, shares:1.31 },
-      { name:'SPDR Dow Jones Industrial Average ETF', ticker:'DIA', price:430.89, shares:0.180647 },
-      { name:'OneMain', ticker:'OMF', price:55.19, shares:1.07 },
-      { name:'Universal Health Realty Income Trust', ticker:'UHT', price:40.78, shares:0.48543 },
-      { name:'Horizon Technology Finance', ticker:'HRZN', price:7.33, shares:2.65 },
-    ];
-
-    // Optional logo files (place in /assets/logos/*.png)
-    const LOGOS = { MO:'/assets/logos/mo.png', DIA:'/assets/logos/dia.png', OMF:'/assets/logos/omf.png', UHT:'/assets/logos/uht.png', HRZN:'/assets/logos/hrzn.png' };
-
-    function logoTag(ticker,name){
-      const srcs = [];
-      if(LOGOS[ticker]) srcs.push(LOGOS[ticker]);
-      const base = `/assets/logos/${ticker.toLowerCase()}`;
-      srcs.push(`${base}.png`, `${base}.jpg`, `${base}.jpeg`, `${base}.webp`, `${base}.svg`);
-      const initials = (ticker||name||'?').replace(/[^A-Za-z0-9]/g,'').slice(0,3).toUpperCase();
-      const first = srcs.shift();
-      const rest = srcs.join('|');
-      return `<img src="${first}" data-alts="${rest}" data-initials="${initials}" alt="${ticker} logo" class="logo" onerror="imgFallback(this)">`;
-    }
-    function imgFallback(img){
-      try{
-        const list = (img.getAttribute('data-alts')||'').split('|').filter(Boolean);
-        if(list.length){
-          const next = list.shift();
-          img.setAttribute('data-alts', list.join('|'));
-          img.src = next; return;
-        }
-        const init = img.getAttribute('data-initials')||'?';
-        const ph = document.createElement('div'); ph.className='placeholder'; ph.textContent=init; img.replaceWith(ph);
-      }catch(e){ console.error(e); }
-    }
-
-    // Calculations
-    const monthlyTotal = (price, shares, apr)=> price * shares * (apr/12);
-    const yearlyTotal  = (price, shares, apr)=> price * shares * apr;
-
-    // ====== RENDERING ======
-    function renderCards(){
-      const grid = document.getElementById('cardGrid');
-      if(!grid) throw new Error('#cardGrid not found');
-      grid.innerHTML = DATA.map(x=>{
-        const mTot = monthlyTotal(x.price, x.shares, APR_DEFAULT);
-        const yTot = yearlyTotal(x.price, x.shares, APR_DEFAULT);
-        return `<div class="glass rounded-2xl ring-grad p-5 flex flex-col gap-3">
-          <div class="flex items-start justify-between gap-3">
-            <div class="flex items-center gap-3">${logoTag(x.ticker,x.name)}
-              <div>
-                <div class="text-xs uppercase tracking-wide text-slate-400">Stock</div>
-                <h2 class="text-lg font-semibold">${x.name} <span class="text-slate-400 mono">(${x.ticker})</span></h2>
-              </div>
-            </div>
-            <span class="rounded-full bg-emerald-400/15 text-emerald-300 text-xs px-2.5 py-1 ring-1 ring-emerald-400/25">Available</span>
-          </div>
-          <dl class="grid grid-cols-2 gap-2 text-sm">
-            <div><dt class="text-slate-400">Price</dt><dd class="font-medium">${fmtUSD.format(x.price)}</dd></div>
-            <div><dt class="text-slate-400">Shares</dt><dd class="font-medium">${fmtNum.format(x.shares)}</dd></div>
-            <div><dt class="text-slate-400">Monthly Interest</dt><dd class="font-medium">${fmtUSD.format(mTot)}</dd></div>
-            <div><dt class="text-slate-400">Yearly Interest</dt><dd class="font-medium">${fmtUSD.format(yTot)}</dd></div>
-          </dl>
-        </div>`;
-      }).join('');
-    }
-
-    function rowHTML(x){
-      const mTot = monthlyTotal(x.price, x.shares, APR_DEFAULT);
-      const yTot = yearlyTotal(x.price, x.shares, APR_DEFAULT);
-      return `<tr class="hover:bg-white/5">
-        <td class="px-4 py-3 font-medium"><div class="flex items-center gap-3">${logoTag(x.ticker,x.name)}<span>${x.name}</span></div></td>
-        <td class="px-4 py-3 mono">${x.ticker}</td>
-        <td class="px-4 py-3 text-right">${fmtUSD.format(x.price)}</td>
-        <td class="px-4 py-3 text-right">${fmtNum.format(x.shares)}</td>
-        <td class="px-4 py-3 text-right">${fmtUSD.format(mTot)}</td>
-        <td class="px-4 py-3 text-right">${fmtUSD.format(yTot)}</td>
-      </tr>`;
-    }
-
-    function renderTable(){
-      const qEl = document.getElementById('q');
-      const sortEl = document.getElementById('sort');
-      const rowsEl = document.getElementById('rows');
-      if(!qEl||!sortEl||!rowsEl) throw new Error('table controls missing');
-      const q = qEl.value.trim().toLowerCase();
-      const sort = sortEl.value;
-      let rows = DATA.filter(x => `${x.name} ${x.ticker}`.toLowerCase().includes(q));
-      rows.sort((a,b)=>{
-        const ay = yearlyTotal(a.price,a.shares,APR_DEFAULT), by = yearlyTotal(b.price,b.shares,APR_DEFAULT);
-        switch(sort){
-          case 'name_desc': return b.name.localeCompare(a.name);
-          case 'year_desc': return by - ay;
-          case 'year_asc': return ay - by;
-          case 'name_asc':
-          default: return a.name.localeCompare(b.name);
-        }
-      });
-      rowsEl.innerHTML = rows.map(rowHTML).join('');
-      document.getElementById('count').textContent = rows.length;
-      document.getElementById('aprLabel').textContent = '3%';
-    }
-
-    // ====== CALCULATOR ======
-    function buildSelect(){
-      const sel = document.getElementById('sel');
-      if(!sel) throw new Error('#sel not found');
-      sel.innerHTML = DATA.map(x=>`<option value="${x.ticker}">${x.name} (${x.ticker})</option>`).join('');
-      sel.onchange = ()=>{
-        const v = sel.value; const x = DATA.find(r=>r.ticker===v); if(!x) return;
-        document.getElementById('cPrice').value = x.price;
-        document.getElementById('cShares').value = x.shares;
-      };
-      if(DATA[0]){ sel.value = DATA[0].ticker; sel.onchange(); }
-    }
-
-    function calc(){
-      const price = parseFloat(document.getElementById('cPrice').value||'0');
-      const shares = parseFloat(document.getElementById('cShares').value||'0');
-      const aprPct = parseFloat(document.getElementById('cApr').value||'3');
-      const months = parseInt(document.getElementById('cMonths').value||'12',10);
-      const apr = (isFinite(aprPct)?aprPct:3)/100;
-      const mTot = price * shares * (apr/12);
-      const yTot = price * shares * apr;
-      const tot = mTot * months;
-      document.getElementById('cMi').textContent = fmtUSD.format(mTot);
-      document.getElementById('cYi').textContent = fmtUSD.format(yTot);
-      document.getElementById('cTot').textContent = fmtUSD.format(tot);
-    }
-
-    // ====== INIT ======
-    function init(){
-      try{
-        renderCards();
-        renderTable();
-        buildSelect();
-        calc();
-        document.getElementById('q').addEventListener('input', renderTable);
-        document.getElementById('sort').addEventListener('change', renderTable);
-        document.getElementById('calcBtn').addEventListener('click', calc);
-        document.getElementById('resetBtn').addEventListener('click', ()=>{ buildSelect(); document.getElementById('cApr').value=3; document.getElementById('cMonths').value=12; calc(); });
-      }catch(e){
-        const bar=document.getElementById('errbar'); if(bar){ bar.textContent = 'Error rendering: '+(e&&e.message?e.message:e); bar.classList.remove('hidden'); }
-        console.error(e);
-      }
-      const y=document.getElementById('year'); if(y){ y.textContent=new Date().getFullYear(); }
-    }
-
-    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
-  </script>
 </body>
 </html>
+
