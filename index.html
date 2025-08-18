@@ -24,16 +24,16 @@
     const fmtUSD = new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'});
     const fmtNum = new Intl.NumberFormat('en-US');
 
-    // Internal data (price only used for interest math; never displayed)
+    // Internal data (price used only to compute interest; never displayed)
     const DATA = [
-      { name:'Altria', ticker:'MO',   price:60.10,  shares:1.31,     broker:'Robinhood' },
+      { name:'Altria', ticker:'MO',   price:60.10,  shares:1.31,      broker:'Robinhood' },
       { name:'SPDR Dow Jones Industrial Average ETF', ticker:'DIA', price:430.89, shares:0.180647, broker:'Robinhood' },
-      { name:'OneMain', ticker:'OMF', price:55.19,  shares:1.07,     broker:'Robinhood' },
-      { name:'Universal Health Realty Income Trust', ticker:'UHT', price:40.78, shares:0.48543, broker:'Robinhood' },
-      { name:'Horizon Technology Finance', ticker:'HRZN', price:7.33, shares:2.65, broker:'Robinhood' },
+      { name:'OneMain', ticker:'OMF', price:55.19,  shares:1.07,      broker:'Robinhood' },
+      { name:'Universal Health Realty Income Trust', ticker:'UHT', price:40.78, shares:0.48543,  broker:'Robinhood' },
+      { name:'Horizon Technology Finance', ticker:'HRZN', price:7.33, shares:2.65,  broker:'Robinhood' },
     ];
 
-    // Logos (put files in /assets/logos/ with these exact names)
+    // Logos (ensure these files are alongside index.html, or adjust paths)
     const LOGOS = {
       DIA: 'Screenshot 2025-07-11 2.33.48 PM.png',
       MO:  '651ee43a9416d.png',
@@ -50,15 +50,12 @@
       return `<div class="placeholder" aria-label="${ticker} logo">${initials}</div>`;
     }
 
-    // Interest calcs
+    // Interest calcs (per share)
     const monthlyPerShare = (price, apr)=> price * (apr/12);
     const yearlyPerShare  = (price, apr)=> price * apr;
-    const monthlyTotal    = (price, shares, apr)=> monthlyPerShare(price, apr) * shares;
-    const yearlyTotal     = (price, shares, apr)=> yearlyPerShare(price, apr) * shares;
 
     // ====== RENDERING ======
     function cardHTML(x){
-      // Per-share numbers (requested)
       const mPS = monthlyPerShare(x.price, APR_DEFAULT);
       const yPS = yearlyPerShare(x.price, APR_DEFAULT);
       return `<div class="glass rounded-2xl ring-grad p-5 flex flex-col gap-3">
@@ -73,8 +70,8 @@
         </div>
         <dl class="grid grid-cols-2 gap-2 text-sm">
           <div><dt class="text-slate-400">Broker</dt><dd class="font-medium">${x.broker}</dd></div>
-          <div><dt class="text-slate-400">Shares</dt><dd class="font-medium">${fmtNum.format(x.shares)}</dd></div>
-          <!-- Yearly FIRST, then Monthly — PER SHARE -->
+          <div><dt class="text-slate-400">Shares Available</dt><dd class="font-medium">${fmtNum.format(x.shares)}</dd></div>
+          <!-- Yearly first, then Monthly — per share -->
           <div><dt class="text-slate-400">Est. Yearly Cost / Share</dt><dd class="font-medium">${fmtUSD.format(yPS)}</dd></div>
           <div><dt class="text-slate-400">Est. Monthly Cost / Share</dt><dd class="font-medium">${fmtUSD.format(mPS)}</dd></div>
         </dl>
@@ -97,7 +94,6 @@
         <td class="px-4 py-3 mono">${x.ticker}</td>
         <td class="px-4 py-3">${x.broker}</td>
         <td class="px-4 py-3 text-right">${fmtNum.format(x.shares)}</td>
-        <!-- Yearly FIRST, then Monthly — PER SHARE -->
         <td class="px-4 py-3 text-right">${fmtUSD.format(yPS)}</td>
         <td class="px-4 py-3 text-right">${fmtUSD.format(mPS)}</td>
       </tr>`;
@@ -107,10 +103,10 @@
       const qEl = document.getElementById('q');
       const sortEl = document.getElementById('sort');
       const rowsEl = document.getElementById('rows');
-      if(!qEl || !sortEl || !rowsEl) return;
+      if(!rowsEl) return;
 
-      const q = (qEl.value||'').trim().toLowerCase();
-      const sort = sortEl.value;
+      const q = (qEl?.value||'').trim().toLowerCase();
+      const sort = sortEl?.value || 'name_asc';
 
       let rows = DATA.filter(x => `${x.name} ${x.ticker}`.toLowerCase().includes(q));
 
@@ -126,10 +122,8 @@
       });
 
       rowsEl.innerHTML = rows.map(rowHTML).join('') || `<tr><td class="px-4 py-3 text-slate-300" colspan="6">No matches.</td></tr>`;
-      const count = document.getElementById('count');
-      if(count) count.textContent = rows.length;
-      const aprLabel = document.getElementById('aprLabel');
-      if(aprLabel) aprLabel.textContent = '3%';
+      const count = document.getElementById('count'); if(count) count.textContent = rows.length;
+      const aprLabel = document.getElementById('aprLabel'); if(aprLabel) aprLabel.textContent = '3%';
     }
 
     // ====== CALCULATOR (shares input; APR fixed) ======
@@ -147,8 +141,7 @@
     }
 
     function calc(){
-      const sel = document.getElementById('sel');
-      if(!sel) return;
+      const sel = document.getElementById('sel'); if(!sel) return;
       const x = DATA.find(r=>r.ticker===sel.value) || DATA[0];
       const months = parseInt(document.getElementById('cMonths')?.value||'12',10);
       const shares = parseFloat(document.getElementById('cShares')?.value||'0');
@@ -157,16 +150,16 @@
       const mTot = mPS * shares;  // position monthly cost
       const yTot = yPS * shares;  // position yearly cost
       const tot  = mTot * months; // total over term
+
       const set = (id,val)=>{ const el=document.getElementById(id); if(el) el.textContent = val; };
+      set('cMps', fmtUSD.format(mPS));
+      set('cYps', fmtUSD.format(yPS));
       set('cMi', fmtUSD.format(mTot));
       set('cYi', fmtUSD.format(yTot));
       set('cTot', fmtUSD.format(tot));
-      // also show the per-share rates for clarity
-      set('cMps', fmtUSD.format(mPS));
-      set('cYps', fmtUSD.format(yPS));
     }
 
-    // ====== INIT & VIEW TOGGLE ======
+    // ====== VIEW TOGGLE & INIT ======
     function setView(view){
       const cardGrid = document.getElementById('cardGrid');
       const tableWrap = document.getElementById('tableWrap');
@@ -188,34 +181,18 @@
     }
 
     function init(){
-      window.addEventListener('error', (e)=>{
-        const bar=document.getElementById('errbar-global');
-        if(bar){ bar.textContent = 'Error: ' + (e?.message||e); bar.classList.remove('hidden'); }
-      });
-
       renderCards();
       renderTable();
       buildSelect();
       calc();
       populateInquiryStockSelect();
 
-      // Toggle handlers
       document.getElementById('btnCards')?.addEventListener('click', ()=> setView('cards'));
       document.getElementById('btnList')?.addEventListener('click',  ()=> setView('list'));
       setView('cards'); // default
 
-      // Table controls
       document.getElementById('q')?.addEventListener('input', renderTable);
       document.getElementById('sort')?.addEventListener('change', renderTable);
-
-      // Calculator controls
-      document.getElementById('calcBtn')?.addEventListener('click', calc);
-      document.getElementById('resetBtn')?.addEventListener('click', ()=>{
-        const mon=document.getElementById('cMonths'); if(mon) mon.value=12;
-        if(DATA[0]){ const sel=document.getElementById('sel'); if(sel) sel.value = DATA[0].ticker; }
-        const sh=document.getElementById('cShares'); if(sh) sh.value = (DATA[0]?.shares||0);
-        calc();
-      });
 
       const y=document.getElementById('year'); if(y) y.textContent=new Date().getFullYear();
     }
@@ -224,11 +201,6 @@
   </script>
 </head>
 <body class="bg-slate-950 text-slate-100">
-  <!-- Global error banner -->
-  <div id="errbar-global" class="hidden mx-auto max-w-6xl mt-4 px-4">
-    <div class="rounded-xl bg-rose-500/10 text-rose-200 p-3 ring-1 ring-rose-400/20 text-sm"></div>
-  </div>
-
   <!-- Header -->
   <header class="sticky top-0 z-40 border-b border-white/10 bg-slate-950/75 backdrop-blur">
     <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -296,8 +268,8 @@
                 <th class="px-4 py-3">Stock</th>
                 <th class="px-4 py-3">Ticker</th>
                 <th class="px-4 py-3">Broker</th>
-                <th class="px-4 py-3 text-right">Shares</th>
-                <!-- Yearly first, Monthly second — PER SHARE -->
+                <th class="px-4 py-3 text-right">Shares Available</th>
+                <!-- Yearly first, Monthly second — per share -->
                 <th class="px-4 py-3 text-right">Est. Yearly Cost / Share</th>
                 <th class="px-4 py-3 text-right">Est. Monthly Cost / Share</th>
               </tr>
@@ -317,7 +289,7 @@
         <div>
           <h3 class="text-2xl font-bold mb-2">Cost Estimator</h3>
           <p class="text-slate-300 mb-4">
-            Estimate your <strong>borrowing cost</strong> (monthly and yearly) based on shares. Figures use the provided estimated per-share cost ($1.20/year = $0.10/month).
+            Estimate your <strong>borrowing cost</strong> (monthly and yearly) based on shares. APR is fixed at 3%.
           </p>
           <div class="grid grid-cols-2 gap-3 mb-3">
             <label class="block text-sm col-span-2">Stock
@@ -360,10 +332,10 @@
     <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10">
       <div class="glass rounded-2xl ring-grad p-6">
         <h3 class="text-2xl font-bold mb-2">Send an Inquiry</h3>
-        <p class="text-slate-300 mb-4">Use this form and we’ll reply by email. Submissions are securely handled.</p>
+        <p class="text-slate-300 mb-4">Use this form and we’ll reply by email. Submissions are securely handled by Netlify.</p>
 
         <!-- Admin note (hidden):
-             Netlify → Forms → stock-lending-inquiry → Notifications → Email → paytontvirgil@gmail.com
+             After deploy: Netlify → Forms → stock-lending-inquiry → Notifications → Email → paytontvirgil@gmail.com
         -->
         <form name="stock-lending-inquiry" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="thank-you.html" class="grid sm:grid-cols-2 gap-4">
           <input type="hidden" name="form-name" value="stock-lending-inquiry" />
@@ -405,3 +377,4 @@
   </footer>
 </body>
 </html>
+
