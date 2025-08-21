@@ -71,7 +71,6 @@
         <dl class="grid grid-cols-2 gap-2 text-sm">
           <div><dt class="text-slate-400">Broker</dt><dd class="font-medium">${x.broker}</dd></div>
           <div><dt class="text-slate-400">Shares Available</dt><dd class="font-medium">${fmtNum.format(x.shares)}</dd></div>
-          <!-- Yearly first, then Monthly — per share -->
           <div><dt class="text-slate-400">Est. Yearly Cost / Share</dt><dd class="font-medium">${fmtUSD.format(yPS)}</dd></div>
           <div><dt class="text-slate-400">Est. Monthly Cost / Share</dt><dd class="font-medium">${fmtUSD.format(mPS)}</dd></div>
         </dl>
@@ -236,7 +235,6 @@
   <!-- Offers (Cards/List toggle) -->
   <section id="offers" class="border-t border-white/10">
     <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10 space-y-6">
-      <!-- Toggle bar -->
       <div class="glass rounded-2xl ring-grad p-4 flex flex-wrap items-center gap-3">
         <div class="text-sm text-slate-300">*Interest shown is the <span class="font-semibold">cost to borrow</span> at 3% APR. **Monthly = Yearly ÷ 12.</div>
         <div class="ml-auto flex items-center gap-2">
@@ -269,7 +267,6 @@
                 <th class="px-4 py-3">Ticker</th>
                 <th class="px-4 py-3">Broker</th>
                 <th class="px-4 py-3 text-right">Shares Available</th>
-                <!-- Yearly first, Monthly second — per share -->
                 <th class="px-4 py-3 text-right">Est. Yearly Cost / Share</th>
                 <th class="px-4 py-3 text-right">Est. Monthly Cost / Share</th>
               </tr>
@@ -282,15 +279,13 @@
     </div>
   </section>
 
-  <!-- Calculator (shares input; APR fixed) -->
+  <!-- Calculator -->
   <section id="calc" class="border-t border-white/10">
     <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10">
       <div class="glass rounded-2xl ring-grad p-6 grid md:grid-cols-2 gap-6 items-start">
         <div>
           <h3 class="text-2xl font-bold mb-2">Cost Estimator</h3>
-          <p class="text-slate-300 mb-4">
-            Estimate your <strong>borrowing cost</strong> (monthly and yearly) based on shares. APR is fixed at 3%.
-          </p>
+          <p class="text-slate-300 mb-4">Estimate your <strong>borrowing cost</strong> (monthly and yearly) based on shares. APR is fixed at 3%.</p>
           <div class="grid grid-cols-2 gap-3 mb-3">
             <label class="block text-sm col-span-2">Stock
               <select id="sel" class="mt-1 w-full rounded-xl bg-white/5 border border-white/10 px-3 py-2 text-sm"></select>
@@ -327,17 +322,14 @@
     </div>
   </section>
 
-  <!-- Contact / Inquiry (Netlify Forms) -->
+  <!-- Contact / Inquiry -->
   <section id="contact" class="border-t border-white/10">
     <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10">
       <div class="glass rounded-2xl ring-grad p-6">
         <h3 class="text-2xl font-bold mb-2">Send an Inquiry</h3>
         <p class="text-slate-300 mb-4">Use this form and we’ll reply by email. Submissions are securely handled by Netlify.</p>
 
-        <!-- Admin note (hidden):
-             After deploy: Netlify → Forms → stock-lending-inquiry → Notifications → Email → paytontvirgil@gmail.com
-        -->
-        <form name="stock-lending-inquiry" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="thank-you.html" class="grid sm:grid-cols-2 gap-4">
+        <form name="stock-lending-inquiry" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/thank-you" class="grid sm:grid-cols-2 gap-4">
           <input type="hidden" name="form-name" value="stock-lending-inquiry" />
           <p class="hidden"><label>Don’t fill this out: <input name="bot-field" /></label></p>
 
@@ -377,4 +369,3 @@
   </footer>
 </body>
 </html>
-
